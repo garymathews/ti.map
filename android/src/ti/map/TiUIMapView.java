@@ -7,33 +7,11 @@
 
 package ti.map;
 
-import org.json.JSONObject;
-import org.json.JSONArray;
-import org.json.JSONTokener;
-
-import org.json.JSONException;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.io.ByteArrayOutputStream;
-
-import org.appcelerator.kroll.KrollDict;
-import org.appcelerator.kroll.KrollProxy;
-import org.appcelerator.kroll.common.Log;
-import org.appcelerator.titanium.TiBlob;
-import org.appcelerator.titanium.TiC;
-import org.appcelerator.titanium.proxy.TiViewProxy;
-import org.appcelerator.titanium.util.TiConvert;
-import org.appcelerator.titanium.view.TiUIFragment;
-import org.appcelerator.titanium.TiApplication;
-import org.appcelerator.titanium.io.TiFileFactory;
-
-import ti.map.Shape.Boundary;
-import ti.map.Shape.IShape;
-import ti.map.Shape.PolylineBoundary;
+import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -44,11 +22,6 @@ import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.content.res.Resources;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.Manifest;
-
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -59,11 +32,33 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.Marker;
 import com.google.maps.android.MarkerManager;
-import com.google.maps.android.clustering.ClusterManager;
 import com.google.maps.android.clustering.Cluster;
+import com.google.maps.android.clustering.ClusterManager;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import org.appcelerator.kroll.KrollDict;
+import org.appcelerator.kroll.KrollProxy;
+import org.appcelerator.kroll.common.Log;
+import org.appcelerator.titanium.TiApplication;
+import org.appcelerator.titanium.TiBlob;
+import org.appcelerator.titanium.TiC;
+import org.appcelerator.titanium.io.TiFileFactory;
+import org.appcelerator.titanium.proxy.TiViewProxy;
+import org.appcelerator.titanium.util.TiConvert;
+import org.appcelerator.titanium.view.TiUIFragment;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+import ti.map.Shape.Boundary;
+import ti.map.Shape.IShape;
+import ti.map.Shape.PolylineBoundary;
 
 public class TiUIMapView extends TiUIFragment
 	implements GoogleMap.OnMarkerClickListener, GoogleMap.OnMapClickListener, GoogleMap.OnMarkerDragListener,
@@ -75,6 +70,7 @@ public class TiUIMapView extends TiUIFragment
 
 	public static final String DEFAULT_COLLECTION_ID = "defaultCollection";
 	private static final String TAG = "TiUIMapView";
+	private static boolean liteMode = false;
 	private GoogleMap map;
 	protected boolean animate = false;
 	protected boolean preLayout = true;
@@ -135,6 +131,10 @@ public class TiUIMapView extends TiUIFragment
 			boolean zOrderOnTop = TiConvert.toBoolean(proxy.getProperty(MapModule.PROPERTY_ZORDER_ON_TOP), false);
 			GoogleMapOptions gOptions = new GoogleMapOptions();
 			gOptions.zOrderOnTop(zOrderOnTop);
+			if (TiConvert.toBoolean(proxy.getProperty(MapModule.PROPERTY_LITE_MODE), false)) {
+				liteMode = true;
+				gOptions.liteMode(true);
+			}
 			Fragment map = SupportMapFragment.newInstance(gOptions);
 			if (map instanceof SupportMapFragment) {
 				((SupportMapFragment) map).getMapAsync(this);
@@ -215,9 +215,11 @@ public class TiUIMapView extends TiUIFragment
 		processOverlaysList();
 		map.setOnMarkerClickListener(mMarkerManager);
 		map.setOnMapClickListener(this);
-		map.setOnCameraIdleListener(this);
-		map.setOnCameraMoveStartedListener(this);
-		map.setOnCameraMoveListener(this);
+		if (!liteMode) {
+			map.setOnCameraIdleListener(this);
+			map.setOnCameraMoveStartedListener(this);
+			map.setOnCameraMoveListener(this);
+		}
 		map.setOnMarkerDragListener(this);
 		map.setOnInfoWindowClickListener(this);
 		map.setInfoWindowAdapter(this);
@@ -359,9 +361,9 @@ public class TiUIMapView extends TiUIFragment
 					Object json = new JSONTokener(loadJSONFromAsset(style)).nextValue();
 
 					if (json instanceof JSONObject) {
-						style = ((JSONObject)json).toString();
+						style = ((JSONObject) json).toString();
 					} else if (json instanceof JSONArray) {
-						style = ((JSONArray)json).toString();
+						style = ((JSONArray) json).toString();
 					} else {
 						Log.e(TAG, "Invalid JSON style.");
 					}
@@ -404,7 +406,7 @@ public class TiUIMapView extends TiUIFragment
 
 	protected void setIndoorEnabled(boolean enabled)
 	{
-		if (map != null) {
+		if (map != null && !liteMode) {
 			map.setIndoorEnabled(enabled);
 		}
 	}
@@ -460,7 +462,8 @@ public class TiUIMapView extends TiUIFragment
 		}
 	}
 
-	protected void showAnnotations(Object[] annotations) {
+	protected void showAnnotations(Object[] annotations)
+	{
 		ArrayList<TiMarker> markers = new ArrayList<TiMarker>();
 
 		// Use supplied annotations first. If none available, select all (parity with iOS)
@@ -495,7 +498,7 @@ public class TiUIMapView extends TiUIFragment
 
 	protected void setScrollEnabled(boolean enabled)
 	{
-		if (map != null) {
+		if (map != null && !liteMode) {
 			map.getUiSettings().setScrollGesturesEnabled(enabled);
 		}
 	}
@@ -544,38 +547,46 @@ public class TiUIMapView extends TiUIFragment
 			longitude = TiConvert.toDouble(dict, TiC.PROPERTY_LONGITUDE);
 		}
 
-		CameraPosition.Builder cameraBuilder = new CameraPosition.Builder();
-		LatLng location = new LatLng(latitude, longitude);
-		cameraBuilder.target(location);
-		cameraBuilder.bearing(bearing);
-		cameraBuilder.tilt(tilt);
-		cameraBuilder.zoom(zoom);
-
-		if (dict.containsKey(TiC.PROPERTY_LATITUDE_DELTA) && dict.get(TiC.PROPERTY_LATITUDE_DELTA) != null) {
-			latitudeDelta = TiConvert.toDouble(dict, TiC.PROPERTY_LATITUDE_DELTA);
-		}
-
-		if (dict.containsKey(TiC.PROPERTY_LONGITUDE_DELTA) && dict.get(TiC.PROPERTY_LONGITUDE_DELTA) != null) {
-			longitudeDelta = TiConvert.toDouble(dict, TiC.PROPERTY_LONGITUDE_DELTA);
-		}
-
-		if (latitudeDelta != 0 && longitudeDelta != 0) {
-			LatLng northeast = new LatLng(latitude + (latitudeDelta / 2.0), longitude + (longitudeDelta / 2.0));
-			LatLng southwest = new LatLng(latitude - (latitudeDelta / 2.0), longitude - (longitudeDelta / 2.0));
-
-			final LatLngBounds bounds = new LatLngBounds(southwest, northeast);
-			if (preLayout) {
-				preLayoutUpdateBounds = bounds;
-				return;
-			} else {
-				moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0), anim);
-				return;
+		if (liteMode) {
+			LatLng l = new LatLng(latitude, longitude);
+			if (map != null) {
+				map.moveCamera(CameraUpdateFactory.newLatLngZoom(l, zoom));
 			}
-		}
+		} else {
 
-		CameraPosition position = cameraBuilder.build();
-		CameraUpdate camUpdate = CameraUpdateFactory.newCameraPosition(position);
-		moveCamera(camUpdate, anim);
+			CameraPosition.Builder cameraBuilder = new CameraPosition.Builder();
+			LatLng location = new LatLng(latitude, longitude);
+			cameraBuilder.target(location);
+			cameraBuilder.bearing(bearing);
+			cameraBuilder.tilt(tilt);
+			cameraBuilder.zoom(zoom);
+
+			if (dict.containsKey(TiC.PROPERTY_LATITUDE_DELTA) && dict.get(TiC.PROPERTY_LATITUDE_DELTA) != null) {
+				latitudeDelta = TiConvert.toDouble(dict, TiC.PROPERTY_LATITUDE_DELTA);
+			}
+
+			if (dict.containsKey(TiC.PROPERTY_LONGITUDE_DELTA) && dict.get(TiC.PROPERTY_LONGITUDE_DELTA) != null) {
+				longitudeDelta = TiConvert.toDouble(dict, TiC.PROPERTY_LONGITUDE_DELTA);
+			}
+
+			if (latitudeDelta != 0 && longitudeDelta != 0) {
+				LatLng northeast = new LatLng(latitude + (latitudeDelta / 2.0), longitude + (longitudeDelta / 2.0));
+				LatLng southwest = new LatLng(latitude - (latitudeDelta / 2.0), longitude - (longitudeDelta / 2.0));
+
+				final LatLngBounds bounds = new LatLngBounds(southwest, northeast);
+				if (preLayout) {
+					preLayoutUpdateBounds = bounds;
+					return;
+				} else {
+					moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0), anim);
+					return;
+				}
+			}
+
+			CameraPosition position = cameraBuilder.build();
+			CameraUpdate camUpdate = CameraUpdateFactory.newCameraPosition(position);
+			moveCamera(camUpdate, anim);
+		}
 	}
 
 	protected void moveCamera(CameraUpdate camUpdate, boolean anim)
@@ -1318,7 +1329,7 @@ public class TiUIMapView extends TiUIFragment
 			proxy.setProperty(TiC.PROPERTY_REGION, d);
 			proxy.fireEvent(TiC.EVENT_REGION_CHANGED, d);
 		}
-		if (mClusterManager != null) {
+		if (mClusterManager != null && !liteMode) {
 			mClusterManager.onCameraIdle();
 		}
 	}
