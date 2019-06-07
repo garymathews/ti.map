@@ -602,6 +602,18 @@ properties:
         references to all of the annotations in a separate array.
     type: Array<Modules.Map.Annotation>
 
+  - name: liteMode
+    summary: Create a liteMode map version
+    description: |
+        When the `liteMode` is switched on the map will be displayed as a bitmap with limited interaction.
+        Please refer to [Google developers documentation](https://developers.google.com/maps/documentation/android-sdk/lite)
+        for more details.
+    type: Boolean
+    default: false
+    since: "4.4.1"
+    platforms: [android]
+    availability: creation
+
   - name: mapType
     summary: |
         Map type constant, either <Modules.Map.NORMAL_TYPE>, <Modules.Map.SATELLITE_TYPE>,
@@ -848,7 +860,7 @@ properties:
     summary: A Boolean value indicating whether the indoor mapping is enabled.
     description: |
         This property is used to enabled/disable the indoor mapping feature of Google Maps.
-        Changing the value after the MapView is drawn can cause flickering. 
+        Changing the value after the MapView is drawn can cause flickering.
         You can read more at:
         [Google Indoor Maps](https://www.google.com/maps/about/partners/indoormaps/)
     type: Boolean
