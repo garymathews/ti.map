@@ -70,7 +70,6 @@ public class TiUIMapView extends TiUIFragment
 
 	public static final String DEFAULT_COLLECTION_ID = "defaultCollection";
 	private static final String TAG = "TiUIMapView";
-	private static boolean liteMode = false;
 	private GoogleMap map;
 	protected boolean animate = false;
 	protected boolean preLayout = true;
@@ -132,7 +131,6 @@ public class TiUIMapView extends TiUIFragment
 			GoogleMapOptions gOptions = new GoogleMapOptions();
 			gOptions.zOrderOnTop(zOrderOnTop);
 			if (TiConvert.toBoolean(proxy.getProperty(MapModule.PROPERTY_LITE_MODE), false)) {
-				liteMode = true;
 				gOptions.liteMode(true);
 			}
 			Fragment map = SupportMapFragment.newInstance(gOptions);
@@ -215,7 +213,7 @@ public class TiUIMapView extends TiUIFragment
 		processOverlaysList();
 		map.setOnMarkerClickListener(mMarkerManager);
 		map.setOnMapClickListener(this);
-		if (!liteMode) {
+		if (!TiConvert.toBoolean(proxy.getProperty(MapModule.PROPERTY_LITE_MODE), false)) {
 			map.setOnCameraIdleListener(this);
 			map.setOnCameraMoveStartedListener(this);
 			map.setOnCameraMoveListener(this);
@@ -406,7 +404,7 @@ public class TiUIMapView extends TiUIFragment
 
 	protected void setIndoorEnabled(boolean enabled)
 	{
-		if (map != null && !liteMode) {
+		if (map != null && !TiConvert.toBoolean(proxy.getProperty(MapModule.PROPERTY_LITE_MODE), false)) {
 			map.setIndoorEnabled(enabled);
 		}
 	}
@@ -498,7 +496,7 @@ public class TiUIMapView extends TiUIFragment
 
 	protected void setScrollEnabled(boolean enabled)
 	{
-		if (map != null && !liteMode) {
+		if (map != null && !TiConvert.toBoolean(proxy.getProperty(MapModule.PROPERTY_LITE_MODE), false)) {
 			map.getUiSettings().setScrollGesturesEnabled(enabled);
 		}
 	}
@@ -547,7 +545,7 @@ public class TiUIMapView extends TiUIFragment
 			longitude = TiConvert.toDouble(dict, TiC.PROPERTY_LONGITUDE);
 		}
 
-		if (liteMode) {
+		if (TiConvert.toBoolean(proxy.getProperty(MapModule.PROPERTY_LITE_MODE), false)) {
 			LatLng l = new LatLng(latitude, longitude);
 			if (map != null) {
 				map.moveCamera(CameraUpdateFactory.newLatLngZoom(l, zoom));
@@ -1329,7 +1327,7 @@ public class TiUIMapView extends TiUIFragment
 			proxy.setProperty(TiC.PROPERTY_REGION, d);
 			proxy.fireEvent(TiC.EVENT_REGION_CHANGED, d);
 		}
-		if (mClusterManager != null && !liteMode) {
+		if (mClusterManager != null && !TiConvert.toBoolean(proxy.getProperty(MapModule.PROPERTY_LITE_MODE), false)) {
 			mClusterManager.onCameraIdle();
 		}
 	}
