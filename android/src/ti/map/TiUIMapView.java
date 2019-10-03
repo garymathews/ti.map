@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollProxy;
+import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.Log;
 import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.TiBlob;
@@ -966,7 +967,7 @@ public class TiUIMapView extends TiUIFragment
 		}
 	}
 
-	public void fireClickEvent(Marker marker, AnnotationProxy annoProxy, String clickSource)
+	public void fireClickEvent(Marker marker, AnnotationProxy annoProxy, String clickSource, boolean deselected)
 	{
 		KrollDict d = new KrollDict();
 		String title = null;
@@ -985,6 +986,7 @@ public class TiUIMapView extends TiUIFragment
 		d.put(TiC.PROPERTY_TYPE, TiC.EVENT_CLICK);
 		d.put(TiC.PROPERTY_SOURCE, proxy);
 		d.put(TiC.EVENT_PROPERTY_CLICKSOURCE, clickSource);
+		d.put(MapModule.PROPERTY_DESELECTED, deselected);
 		if (proxy != null) {
 			proxy.fireEvent(TiC.EVENT_CLICK, d);
 		}
@@ -1062,17 +1064,17 @@ public class TiUIMapView extends TiUIFragment
 			// event and return from this listener.
 			if (selectedAnnotation.equals(annoProxy)) {
 				selectedAnnotation = null;
-				fireClickEvent(marker, annoProxy, MapModule.PROPERTY_PIN);
+				fireClickEvent(marker, annoProxy, MapModule.PROPERTY_PIN, true);
 				return true;
 			} else {
 				// Clicking from a selected annotation to another one.
 				// After hiding the info window, send deselected
 				// event for the selected annotation and proceed with
 				// this listener for the marker parameter.
-				fireClickEvent(marker, selectedAnnotation, MapModule.PROPERTY_PIN);
+				fireClickEvent(marker, selectedAnnotation, MapModule.PROPERTY_PIN, true);
 			}
 		}
-		fireClickEvent(marker, annoProxy, MapModule.PROPERTY_PIN);
+		fireClickEvent(marker, annoProxy, MapModule.PROPERTY_PIN, false);
 		selectedAnnotation = annoProxy;
 		boolean showInfoWindow = TiConvert.toBoolean(annoProxy.getProperty(MapModule.PROPERTY_SHOW_INFO_WINDOW), true);
 		// Returning false here will enable native behavior, which shows the
@@ -1090,7 +1092,7 @@ public class TiUIMapView extends TiUIFragment
 		if (selectedAnnotation != null) {
 			TiMarker tiMarker = selectedAnnotation.getTiMarker();
 			if (tiMarker != null) {
-				fireClickEvent(tiMarker.getMarker(), selectedAnnotation, null);
+				fireClickEvent(tiMarker.getMarker(), selectedAnnotation, null, true);
 			}
 			selectedAnnotation = null;
 		}
@@ -1228,7 +1230,7 @@ public class TiUIMapView extends TiUIFragment
 			if (clicksource == null) {
 				clicksource = MapModule.PROPERTY_INFO_WINDOW;
 			}
-			fireClickEvent(marker, annoProxy, clicksource);
+			fireClickEvent(marker, annoProxy, clicksource, false);
 		}
 	}
 

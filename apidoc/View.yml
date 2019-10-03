@@ -446,6 +446,13 @@ events:
             Longitude of the clicked annotation or the point clicked in the polygon, polyline and circle.
         type: Number
 
+      - name: deselected
+        summary: |
+            Will show if the annotation was selected (false) or deselected (true)
+        type: Boolean
+        since: "4.5.0"
+        platforms: [android, iphone, ipad]
+
   - name: complete
     summary: Fired when the map completes loading.
 
